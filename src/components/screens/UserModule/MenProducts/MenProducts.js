@@ -1,70 +1,97 @@
-import React from 'react';
-import {SafeAreaView, ScrollView} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  SafeAreaView,
+  ActivityIndicator,
+  FlatList,
+  View,
+  RefreshControl,
+  Text,
+} from 'react-native';
+import axios from 'axios';
 import GentsItemsContainer from '../../../othercomponents/GentsProducts/GentsItemContainer';
-import ShalwarKameezSimple from '../../../../assets/men-products/shalwar-kameez-simple.jpg';
-import ShalwarKameezCotton from '../../../../assets/men-products/shalwar-kameez-cotton.jpg';
-import ShalwarKameezKurta from '../../../../assets/men-products/shalwar-kameez-kurta.jpg';
-import ShalwarKameezKhaddar from '../../../../assets/men-products/shalwar-kameez-khaddar.jpg';
-import ShalwarKameezKarandi from '../../../../assets/men-products/shalwar-kameez-karandi.jpg';
-import ShalwarKameezSilk from '../../../../assets/men-products/shalwar-kameez-silk.jpg';
-import GentsKidsSuit from '../../../../assets/men-products/gents-kids.png';
 
 const MenProducts = () => {
+  const [gentsProducts, setGentsProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get(
+        'https://pickandstitches.com/font-awesome/scss/scss/api_get_male_products.php',
+      )
+      .then(response => {
+        console.log('Response data:', response.data);
+        const gentsProducts = response.data.filter(
+          product => product.type === 'male',
+        );
+        setGentsProducts(gentsProducts);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      });
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+
+    try {
+      const timestamp = new Date().getTime(); // Generate a unique timestamp
+      const response = await axios.get(
+        `https://pickandstitches.com/font-awesome/scss/scss/api_get_male_products.php?timestamp=${timestamp}`,
+      );
+      const gentsProducts = response.data.filter(
+        product => product.type === 'male',
+      );
+      setGentsProducts(gentsProducts);
+    } catch (error) {
+      console.error('Error fetching new data:', error);
+    }
+
+    setRefreshing(false);
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white items-center justify-center">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Items Start */}
-        <GentsItemsContainer
-          product="Shalwar Kameez (Simple)"
-          product_pic={ShalwarKameezSimple}
-          price={'1500'}
-          onwards={'Onwards'}
+    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
+      {loading ? (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <ActivityIndicator size="large" color="green" />
+        </View>
+      ) : gentsProducts.length > 0 ? (
+        <FlatList
+          data={gentsProducts}
+          keyExtractor={item => item.id.toString()} // Use index as the key
+          renderItem={({item}) => (
+            <GentsItemsContainer
+              product_pic={item.pic} // Use item.pic for product pic
+              product={item.name} // Use item.name for product name
+              price={item.price} // Use item.price for product price
+              onwards={'Onwards'}
+            />
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
-
-        <GentsItemsContainer
-          product="Shalwar Kameez (Cotton)"
-          product_pic={ShalwarKameezCotton}
-          price={'1500'}
-          onwards={'Onwards'}
-        />
-
-        <GentsItemsContainer
-          product="Shalwar Kameez (Kurta)"
-          product_pic={ShalwarKameezKurta}
-          price={'1500'}
-          onwards={'Onwards'}
-        />
-
-        <GentsItemsContainer
-          product="Shalwar Kameez (Khaddar)"
-          product_pic={ShalwarKameezKhaddar}
-          price={'1600'}
-          onwards={'Onwards'}
-        />
-
-        <GentsItemsContainer
-          product="Shalwar Kameez (Karandi)"
-          product_pic={ShalwarKameezKarandi}
-          price={'1800'}
-          onwards={'Onwards'}
-        />
-
-        <GentsItemsContainer
-          product="Shalwar Kameez (Silk)"
-          product_pic={ShalwarKameezSilk}
-          price={'1800'}
-          onwards={'Onwards'}
-        />
-
-        <GentsItemsContainer
-          product="Gents Kids Suit"
-          product_pic={GentsKidsSuit}
-          price={'1800'}
-          onwards={'Onwards'}
-        />
-
-        {/* Items End */}
-      </ScrollView>
+      ) : (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <Text className="text-xl" style={{fontFamily: 'Montserrat-SemiBold'}}>
+            No Gents Products
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };

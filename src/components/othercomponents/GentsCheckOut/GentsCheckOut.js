@@ -8,15 +8,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useRoute, useNavigation} from '@react-navigation/native';
 import Print from 'react-native-print';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import axios from 'axios';
 
 const GentsCheckOut = () => {
   const route = useRoute();
+  const product_pic =
+    route.params?.product_pic || 'Default product product_pic';
   const product = route.params?.product || 'Default product';
-  const product_pic = route.params?.product_pic || 'Default product';
   const price = parseFloat(route.params?.price);
   const name = route.params?.name || 'Default name';
   const email = route.params?.email || 'Default email';
@@ -30,7 +31,8 @@ const GentsCheckOut = () => {
   const puncha = route.params?.puncha || false;
   const Tob_double_stitch = route.params?.Tob_double_stitch || false;
   const Embroidery = route.params?.Embroidery || false;
-  const sample = route.params?.sample;
+  const sample = route.params?.sample || 'No sample attached';
+  const availTime = route.params?.availTime || 'Not Selected';
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
@@ -84,7 +86,6 @@ const GentsCheckOut = () => {
   const orderDetails = [
     {label: 'Product Name', value: product},
     {label: 'Name', value: name},
-    {label: 'Email', value: email},
     {label: 'Mobile', value: cell},
     {label: 'Address', value: adress},
     {label: 'Neck Type', value: neck || 'Not selected'},
@@ -106,8 +107,8 @@ const GentsCheckOut = () => {
 
     {
       label: 'Tob Stitch',
-      value: `${Tob_double_stitch || 'Not selected'} (Rs.${
-        Tob_double_stitch === 'Tob Double Stitch' ? 300 : 0
+      value: `${Tob_double_stitch ? 'Tob Double Stitch' : 'Not selected'} (Rs.${
+        Tob_double_stitch ? 300 : 0
       })`,
     },
 
@@ -124,11 +125,13 @@ const GentsCheckOut = () => {
 
     {label: 'Delivery Charges', value: formatPriceAsCurrency(deliverycharges)},
 
+    {label: 'Pickup Timing', value: availTime},
+
     {
       label: 'Samples',
       value: (
         <View className="flex-1 flex-row p-5">
-          {sample && sample.length > 0 ? (
+          {sample && Array.isArray(sample) && sample.length > 0 ? (
             sample.map(uri => (
               <Image key={uri} source={{uri}} className="w-20 h-20" />
             ))
@@ -261,6 +264,11 @@ const GentsCheckOut = () => {
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4 style="font-size:2rem">Pickup Timing</h4>
+        <p style="font-size:2rem">${availTime || 'Not Selected'}</p>
+        </div> 
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
         <h4 style="font-size:2rem">Delivery Charges</h4>
         <p style="font-size:2rem">${formatPriceAsCurrency(deliverycharges)}</p>
       </div>      
@@ -277,29 +285,29 @@ const GentsCheckOut = () => {
   };
 
   const handleCheckOut = async () => {
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTime = new Date().toLocaleTimeString();
+
     try {
-      // Show loading indicator
       setLoading(true);
+      const orderData = new FormData();
 
-      const currentDate = new Date().toISOString().split('T')[0];
-      const currentTime = new Date().toLocaleTimeString();
-      ('');
-
-      const formData = new FormData();
-
-      // Define the order data
-      const orderData = {
-        name,
-        email,
-        cell,
-        adress,
-        neck,
-        Pocket,
-        Daman,
-        wrist,
-        comments,
-        price,
-        puncha: puncha
+      // Append other order details
+      orderData.append('product_pic', product_pic);
+      orderData.append('product', product);
+      orderData.append('name', name);
+      orderData.append('mobile', cell);
+      orderData.append('address', adress);
+      orderData.append('neck', neck);
+      orderData.append('pocket', Pocket);
+      orderData.append('daman', Daman);
+      orderData.append('wrist', wrist);
+      orderData.append('comment', comments);
+      orderData.append('type', 'male');
+      orderData.append('price', price);
+      orderData.append(
+        'puncha',
+        puncha
           ? `${puncha} (Rs.${
               puncha === 'Single Kanta'
                 ? 100
@@ -308,9 +316,15 @@ const GentsCheckOut = () => {
                 : 0
             })`
           : '',
+      );
+      orderData.append(
+        'Tob_double_stitch',
+        Tob_double_stitch ? 'Top Double Stitch(Rs.300)' : '',
+      );
 
-        Tob_double_stitch: Tob_double_stitch ? 'Tob Double Stitch(Rs.300)' : '',
-        Embroidery: Embroidery
+      orderData.append(
+        'Embroidery',
+        Embroidery
           ? `${Embroidery} (Rs.${
               Embroidery === 'Embroidery Full'
                 ? 500
@@ -319,94 +333,38 @@ const GentsCheckOut = () => {
                 : 0
             })`
           : '',
-        type: 'male',
-        total: calculateTotalPrice(),
-        date: currentDate,
-        time: currentTime,
-        deliverycharges,
-        product,
-        product_pic,
+      );
+      orderData.append('deliverycharges', deliverycharges);
 
-        sample: sample.forEach((uri, index) => {
-          const sample = `sample_${index + 1}.jpg`;
-          formData.append('sample[]', {
-            uri: uri,
-            type: 'image/jpeg',
-            name: sample,
-          });
-        }),
-      };
+      orderData.append('total', total);
+      orderData.append('date', currentDate);
+      orderData.append('time', currentTime);
+      if (sample && sample.length > 0) {
+        orderData.append('sample', {
+          uri: sample[0],
+          type: 'image/jpeg',
+          name: 'sample.jpg',
+        });
+      }
 
-      // Send order details to the backend API
       const orderApiUrl =
         'https://pickandstitches.com/font-awesome/scss/scss/api_male_orders.php';
       const response = await axios.post(orderApiUrl, orderData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
       });
 
-      if (response.status === 200) {
-        // Order submission successful
-        // Now, send a notification to the admin
-        const notificationApiUrl =
-          'https://pickandstitches.com/font-awesome/scss/scss/api_male_orders_notifications.php';
-        const notificationResponse = await axios.post(notificationApiUrl, {
-          name,
-          email,
-          cell,
-          adress,
-          neck,
-          Pocket,
-          Daman,
-          wrist,
-          comments,
-          product,
-          price,
-          puncha: puncha
-            ? `${puncha} (Rs.${
-                puncha === 'Single Kanta'
-                  ? 100
-                  : puncha === 'Double Kanta'
-                  ? 200
-                  : 0
-              })`
-            : '',
-          Tob_double_stitch: Tob_double_stitch
-            ? 'Tob Double Stitch(Rs.300)'
-            : '',
-          Embroidery: Embroidery
-            ? `${Embroidery} (Rs.${
-                Embroidery === 'Embroidery Full'
-                  ? 500
-                  : Embroidery === 'Embroidery Normal'
-                  ? 300
-                  : 0
-              })`
-            : '',
-          deliverycharges,
-          total: calculateTotalPrice(),
-        });
-
-        if (notificationResponse.data.success) {
-          // Notification sent successfully
-          alert('Thank You! Your Order Has Been Placed Successfully!');
-        } else {
-          console.error(
-            'Error sending notification:',
-            notificationResponse.data.error,
-          );
-          alert('Error sending notification. Please try again later.');
-        }
+      if (response.status >= 200 && response.status < 300) {
+        alert('Thank You! Your Order Has Been Placed Successfully!');
+        // navigation.navigate('Home');
       } else {
-        // Order submission failed
         alert('Error saving data. Please try again later.');
       }
     } catch (error) {
-      // Handle any errors that occurred during the process
+      console.error('Error during checkout:', error);
       alert('An error occurred during checkout. Please try again.');
     } finally {
-      // Hide loading indicator
       setLoading(false);
     }
   };

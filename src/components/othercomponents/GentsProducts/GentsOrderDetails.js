@@ -21,7 +21,6 @@ const GentsOrderDetails = () => {
   const price = route.params?.price;
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [cell, setCell] = useState('');
   const [adress, setAdress] = useState('');
   const [neck, setNeck] = useState('');
@@ -29,7 +28,7 @@ const GentsOrderDetails = () => {
   const [Daman, setDaman] = useState('');
   const [wrist, setWrist] = useState('');
   const [comments, setComments] = useState('');
-  const [sample, setSample] = useState([]);
+  const [sample, setSample] = useState('');
   const [singleKanta, setSingleKanta] = useState(false);
   const [doubleKanta, setDoubleKanta] = useState(false);
   const [Tob_double_stitch, setTobDoubleStitch] = useState(false);
@@ -40,12 +39,11 @@ const GentsOrderDetails = () => {
   const handlePickDocument = async () => {
     try {
       const result = await DocumentPicker.pick({
-        allowMultiSelection: true,
         type: [DocumentPicker.types.images], // You can specify other types as needed
       });
 
-      const uris = result.map(file => file.uri);
-      setSample([...sample, ...uris]);
+      const uri = result[0].uri; // Get the URI of the selected document
+      setSample([uri]); // Replace the existing sample array with the new URI
     } catch (error) {
       if (DocumentPicker.isCancel(error)) {
         // Handle cancel
@@ -58,19 +56,16 @@ const GentsOrderDetails = () => {
 
   // Declare and initialize refs
   const nameRef = useRef();
-  const emailRef = useRef();
   const cellRef = useRef();
   const adressRef = useRef();
 
   const ValidInput = () => {
     const namePattern = /^[a-zA-Z\s]*$/;
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const cellPattern = /^(\+92|92|0)(3\d{2}|\d{2})(\d{7})$/;
     const adressPattern = /^[\w\s,'-]*$/;
 
     return (
       namePattern.test(name) &&
-      emailPattern.test(email) &&
       cellPattern.test(cell) &&
       adressPattern.test(adress)
     );
@@ -84,19 +79,6 @@ const GentsOrderDetails = () => {
     return '';
   };
   const nameError = validateName();
-
-  const validateEmail = () => {
-    if (!email) {
-      return ''; // Return an empty string if the email is empty
-    }
-
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!regex.test(email)) {
-      return 'Invalid Email Format';
-    }
-    return '';
-  };
-  const emailError = validateEmail();
 
   const handleCellChange = value => {
     setCell(value);
@@ -134,11 +116,6 @@ const GentsOrderDetails = () => {
       nameRef.current.focus();
       return;
     }
-    if (!email) {
-      alert('Email field is empty');
-      emailRef.current.focus();
-      return;
-    }
     if (!cell) {
       alert('Cell field is empty');
       cellRef.current.focus();
@@ -163,7 +140,6 @@ const GentsOrderDetails = () => {
         product_pic,
         product,
         name,
-        email,
         cell,
         adress,
         neck,
@@ -179,18 +155,16 @@ const GentsOrderDetails = () => {
           ? 'Double Kanta'
           : '',
 
-        Tob_double_stitch: Tob_double_stitch ? 'Tob Double Stitch' : '',
+        Tob_double_stitch: Tob_double_stitch ? 'Tob Double Stitch' : null,
 
         Embroidery: embroideryFull
           ? 'Embroidery Full'
           : embroideryNormal
           ? 'Embroidery Normal'
           : '',
-
       });
 
       setName('');
-      setEmail('');
       setCell('');
       setAdress('');
       setNeck('');
@@ -205,6 +179,7 @@ const GentsOrderDetails = () => {
       setEmbroideryFull('');
       setEmbroideryNormal('');
       setSample('');
+      setAvailTime('');
     }, 2000);
   };
 
@@ -214,7 +189,7 @@ const GentsOrderDetails = () => {
         className="flex-1 px-4 py-4"
         showsVerticalScrollIndicator={false}>
         {/* Image Start */}
-        <Image source={product_pic} className="w-36 h-56 bg-contain" />
+        <Image source={{uri: product_pic}} className="w-36 h-56 bg-contain" />
 
         {/* Check-Out Form */}
         <View className="flex-1 mt-14">
@@ -247,26 +222,6 @@ const GentsOrderDetails = () => {
               className="text-red-600 text-sm left-3"
               style={{fontFamily: 'Montserrat-SemiBold'}}>
               {nameError}
-            </Text>
-          ) : null}
-
-          {/* Email */}
-          <View className="border-b-2 border-b-gray-500 mb-3">
-            <TextInput
-              className="text-sm text-primary left-3"
-              placeholder="Email"
-              placeholderTextColor={'#539165'}
-              value={email}
-              onChangeText={setEmail}
-              ref={emailRef}
-              style={{fontFamily: 'Montserrat-SemiBold'}}
-            />
-          </View>
-          {emailError ? (
-            <Text
-              className="text-red-600 text-sm left-3"
-              style={{fontFamily: 'Montserrat-SemiBold'}}>
-              {emailError}
             </Text>
           ) : null}
 
@@ -663,7 +618,12 @@ const GentsOrderDetails = () => {
                   <Text
                     className="text-[15px] text-black"
                     style={{fontFamily: 'Montserrat-SemiBold'}}>
-                    Embroidery Full
+                    Embroidery
+                  </Text>
+                  <Text
+                    className="text-[15px] text-black"
+                    style={{fontFamily: 'Montserrat-SemiBold'}}>
+                    Full
                   </Text>
                   <Text
                     className="text-[15px] text-black"
@@ -706,7 +666,12 @@ const GentsOrderDetails = () => {
                     <Text
                       className="text-[15px] text-black"
                       style={{fontFamily: 'Montserrat-SemiBold'}}>
-                      Embroidery Normal
+                      Embroidery
+                    </Text>
+                    <Text
+                      className="text-[15px] text-black"
+                      style={{fontFamily: 'Montserrat-SemiBold'}}>
+                      Normal
                     </Text>
                     <Text
                       className="text-[15px] text-black"
@@ -719,21 +684,89 @@ const GentsOrderDetails = () => {
             </View>
           </View>
 
+          {/* Pickup Time */}
+          <View>
+            <View className="mb-3 border-b-2 border-b-gray-500">
+              <Picker
+                selectedValue={availTime}
+                onValueChange={setAvailTime}
+                style={{color: '#539165'}}>
+                <Picker.Item
+                  label="Select Available Time for Picking"
+                  value=""
+                  style={{color: '#539165', fontSize: 15, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="1AM TO 3AM"
+                  value="1AM TO 3AM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="3AM TO 5AM"
+                  value="3AM TO 5AM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="5AM TO 7AM"
+                  value="5AM TO 7AM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="7AM TO 9AM"
+                  value="7AM TO 9AM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="9AM TO 12AM"
+                  value="9AM TO 12AM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="12AM TO 2PM"
+                  value="12AM TO 2PM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="2PM TO 4PM"
+                  value="2PM TO 4PM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="4PM TO 6PM"
+                  value="4PM TO 6PM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="6PM TO 8PM"
+                  value="6PM TO 8PM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="8PM TO 10PM"
+                  value="8PM TO 10PM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+                <Picker.Item
+                  label="10PM TO 12PM"
+                  value="10PM TO 12PM"
+                  style={{color: '#539165', fontSize: 18, fontWeight: '800'}}
+                />
+              </Picker>
+            </View>
+          </View>
+
           {/* Attachments */}
           <View className="flex-1 flex-row p-5">
-            {sample && sample.length > 0 ? (
-              sample.map(uri => (
-                <Image
-                  key={uri}
-                  source={{uri}}
-                  className="w-32 h-32 right-3 mr-3"
-                />
-              ))
+            {sample.length > 0 ? (
+              <Image
+                source={{uri: sample[0]}}
+                className="w-32 h-32 right-3 mr-3"
+              />
             ) : (
               <Text
                 className="text-gray-400 text-sm"
                 style={{fontFamily: 'Montserrat-SemiBold'}}>
-                Any Sample (Upto 3 Samples)
+                Any Sample
               </Text>
             )}
           </View>

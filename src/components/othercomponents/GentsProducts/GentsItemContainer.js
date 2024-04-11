@@ -12,10 +12,10 @@ const GentsItemsContainer = ({product_pic, product, price, onwards}) => {
 
   return (
     <TouchableOpacity
-      className="flex-1 justify-center items-center border border-gray-300 rounded-md px-2 py-2 shadow mt-5 mb-3"
+      className="flex-1  items-center mt-5 mb-3"
       onPress={handleItemPress}>
       <Image
-        source={product_pic}
+        source={{uri: product_pic}}
         className="object-contain rounded-md mt-2 w-[200px] h-[285px]"
       />
 
